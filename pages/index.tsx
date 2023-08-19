@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import Button from '@components/Button'
 import { useEffect, useRef, useState } from 'react'
+import { css } from '@emotion/react'
 
 type IDatabase = {
   id: string
@@ -49,22 +50,24 @@ export default function Home() {
     >
       <div className="grid text-center">
         <input
-          className="text-black"
+          className="placeholder:italic placeholder:text-slate-400 w-96 block bg-white  border border-slate-300 rounded-md py-2 px-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1 sm:text-sm"
           ref={inputRef}
           type="text"
           placeholder="name"
         />
-        <br />
-        <br />
-        <button onClick={handleClick}>
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Add Jacket
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-        </button>
       </div>
+      <button
+        onClick={handleClick}
+        css={css`
+          background-color: pink;
+          padding: 16px;
+          border-radius: 8px;
+        `}
+      >
+        <h2 className={`font-semibold`}>Add Jacket</h2>
+      </button>
+
+      <Button onClick={handleClick}>Add Product</Button>
 
       <div className="">
         <h2 className={`text-2xl font-semibold`}>Prouct List</h2>
