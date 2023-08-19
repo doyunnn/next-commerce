@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 type IDatabase = {
   id: string
   name: string
+  createdAt: string
   properties: {
     id: string
   }[]
@@ -66,9 +67,15 @@ export default function Home() {
       </div>
 
       <div className="">
-        <p>Prouct List</p>
+        <h2 className={`text-2xl font-semibold`}>Prouct List</h2>
+        <br />
         {products &&
-          products.map((item) => <div key={item.id}>{item.name}</div>)}
+          products.map((item) => (
+            <div key={item.id} className="flex gap-x-[10px]">
+              <p>{item.name}</p>
+              <span>{item.createdAt}</span>
+            </div>
+          ))}
         {/* {products &&
           products.map((item) => (
             <div key={item.id} className="w-full w-auto">
