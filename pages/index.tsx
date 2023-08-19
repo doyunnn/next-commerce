@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 
 type IDatabase = {
   id: string
+  name: string
   properties: {
     id: string
   }[]
@@ -14,8 +15,13 @@ export default function Home() {
   const [products, setProducts] = useState<IDatabase[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // useEffect(() => {
+  //   fetch('/api/get-items')
+  //     .then((res) => res.json())
+  //     .then((data) => setProducts(data.items))
+  // }, [])
   useEffect(() => {
-    fetch('/api/get-items')
+    fetch('/api/get-products')
       .then((res) => res.json())
       .then((data) => setProducts(data.items))
   }, [])
@@ -62,6 +68,8 @@ export default function Home() {
       <div className="">
         <p>Prouct List</p>
         {products &&
+          products.map((item) => <div key={item.id}>{item.name}</div>)}
+        {/* {products &&
           products.map((item) => (
             <div key={item.id} className="w-full w-auto">
               {JSON.stringify(item)}
@@ -78,7 +86,7 @@ export default function Home() {
               <br />
               <br />
             </div>
-          ))}
+          ))} */}
       </div>
 
       {/* ---------------------------------------------- */}
