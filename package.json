@@ -5,32 +5,44 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@mantine/core": "^6.0.19",
+    "@mantine/hooks": "^6.0.19",
     "@notionhq/client": "^2.2.11",
     "@prisma/client": "^5.1.1",
     "@types/node": "20.5.1",
     "@types/react": "18.2.20",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.15",
+    "draft-js": "^0.11.7",
     "eslint": "8.47.0",
     "eslint-config-next": "13.4.19",
     "next": "13.4.19",
+    "nuka-carousel": "^6.0.3",
     "postcss": "8.4.28",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-draft-wysiwyg": "^1.15.0",
+    "react-image-gallery": "^1.3.0",
     "tailwindcss": "3.3.3",
     "typescript": "5.1.6"
   },
   "devDependencies": {
+    "@types/draft-js": "^0.11.12",
+    "@types/react-draft-wysiwyg": "^1.13.4",
+    "@types/react-image-gallery": "^1.2.0",
     "husky": "^8.0.3",
     "lint-staged": "^14.0.0",
+    "next-sitemap": "^4.2.2",
     "prettier": "^3.0.2",
-    "prisma": "^5.1.1"
+    "prisma": "^5.1.1",
+    "ts-node": "^10.9.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

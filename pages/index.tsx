@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import Button from '@components/Button'
 import { useEffect, useRef, useState } from 'react'
 import { css } from '@emotion/react'
+import Link from 'next/link'
 
 type IDatabase = {
   id: string
@@ -74,9 +75,13 @@ export default function Home() {
         <br />
         {products &&
           products.map((item) => (
-            <div key={item.id} className="flex gap-x-[10px]">
-              <p>{item.name}</p>
-              <span>{item.createdAt}</span>
+            <div key={item.id}>
+              <Link href={`/products/${item.id}`}>
+                <div className="flex gap-x-[10px]">
+                  <p>{item.name}</p>
+                  <span>{item.createdAt}</span>
+                </div>
+              </Link>
             </div>
           ))}
         {/* {products &&
