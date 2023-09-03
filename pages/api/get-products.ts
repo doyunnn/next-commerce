@@ -4,11 +4,11 @@ import { OrderByType, getOrderBy } from '@/constants/products'
 
 const prisma = new PrismaClient()
 
-interface IProducts {
+export interface IProducts {
   skip: number
-  take: number
+  take?: number
   category?: number
-  orderBy?: OrderByType
+  orderBy?: OrderByType | null
   contains?: string
 }
 

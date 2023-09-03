@@ -5,12 +5,15 @@ import { Input, Pagination, SegmentedControl, Select } from '@mantine/core'
 import { CATEGORY_MAP, FILTERS, OrderByType, TAKE } from '@/constants/products'
 import { IconSearch } from '@tabler/icons-react'
 import useDebounced from '../../hooks/useDebounce'
+import useCacheGetProducts from '../api/hooks/useCacheGetProducts'
+import useCacheGetCategories from '../api/hooks/useCacheGetCategories'
+import useCacheGetProductsCount from '../api/hooks/useCacheGetProductsCount'
 
 export default function Products() {
   // const [skip, setSkip] = useState(0)
-  const [products, setProducts] = useState<products[]>([])
-  const [total, setTotal] = useState(0)
-  const [categories, setCategories] = useState<categories[]>([])
+  // const [products, setProducts] = useState<products[]>([])
+  // const [total, setTotal] = useState(0)
+  // const [categories, setCategories] = useState<categories[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('-1')
   const [activePage, setPage] = useState(1)
   const [selectedFilter, setSelectedFilter] = useState<OrderByType | null>(
@@ -20,51 +23,18 @@ export default function Products() {
 
   const debouncedKeyword = useDebounced<string>(keyword)
 
-  useEffect(() => {
-    fetchCategories().then(setCategories)
-  }, [])
-  useEffect(() => {
-    fetchProductsCount(selectedCategory, debouncedKeyword).then(setTotal)
-  }, [selectedCategory, debouncedKeyword])
-  useEffect(() => {
-    const skip = TAKE * (activePage - 1)
-    fetchProducts(
-      skip,
-      selectedCategory,
-      selectedFilter,
-      debouncedKeyword,
-    ).then(setProducts)
-  }, [activePage, selectedCategory, selectedFilter, debouncedKeyword])
-  const fetchCategories = async () => {
-    const data = await fetch(`/api/get-categories`)
-      .then((res) => res.json())
-      .then((data) => data.items)
+  const { data: total } = useCacheGetProductsCount(
+    selectedCategory,
+    debouncedKeyword,
+  )
+  const { data: categories } = useCacheGetCategories()
 
-    return data
-  }
-  const fetchProductsCount = async (category: string, keyword: string) => {
-    const data = await fetch(
-      `/api/get-products-count?category=${category}&contains=${keyword}`,
-    )
-      .then((res) => res.json())
-      .then((data) => Math.ceil(data.items / TAKE))
-
-    return data
-  }
-  const fetchProducts = async (
-    skip: number = 0,
-    category: string,
-    filter: OrderByType | null,
-    keyword: string,
-  ) => {
-    const data = await fetch(
-      `/api/get-products?skip=${skip}&take=${TAKE}&category=${category}&orderBy=${filter}&contains=${keyword}`,
-    )
-      .then((res) => res.json())
-      .then((data) => data.items)
-
-    return data
-  }
+  const { data: products } = useCacheGetProducts({
+    skip: activePage,
+    category: Number(selectedCategory),
+    orderBy: selectedFilter,
+    contains: debouncedKeyword,
+  })
 
   const categoriesList = useMemo(() => {
     const list = [{ label: 'ALL', value: '-1' }]
@@ -80,6 +50,38 @@ export default function Products() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(e.target.value)
   }
+
+  // useEffect(() => {
+  //   fetchCategories().then(setCategories)
+  // }, [])
+  // useEffect(() => {
+  //   fetchProductsCount(selectedCategory, debouncedKeyword).then(setTotal)
+  // }, [selectedCategory, debouncedKeyword])
+  // useEffect(() => {
+  //   const skip = TAKE * (activePage - 1)
+  //   fetchProducts(
+  //     skip,
+  //     selectedCategory,
+  //     selectedFilter,
+  //     debouncedKeyword,
+  //   ).then(setProducts)
+  // }, [activePage, selectedCategory, selectedFilter, debouncedKeyword])
+  // const fetchCategories = async () => {
+  //   const data = await fetch(`/api/get-categories`)
+  //     .then((res) => res.json())
+  //     .then((data) => data.items)
+
+  //   return data
+  // }
+  // const fetchProductsCount = async (category: string, keyword: string) => {
+  //   const data = await fetch(
+  //     `/api/get-products-count?category=${category}&contains=${keyword}`,
+  //   )
+  //     .then((res) => res.json())
+  //     .then((data) => Math.ceil(data.items / TAKE))
+
+  //   return data
+  // }
 
   return (
     <div className="px-36 mt-36 mb-36 flex flex-col justify-center">
@@ -139,7 +141,7 @@ export default function Products() {
           className="m-auto"
           value={activePage}
           onChange={setPage}
-          total={total}
+          total={total ?? 0}
         />
       </div>
     </div>

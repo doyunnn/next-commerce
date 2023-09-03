@@ -15,12 +15,12 @@ export const FILTERS: { label: string; value: OrderByType }[] = [
   { label: '가격 낮은 순', value: 'cheap' },
 ]
 
-export const getOrderBy = (orderBy?: OrderByType) => {
+export const getOrderBy = (orderBy?: OrderByType | null) => {
   return orderBy
     ? orderBy === 'latest'
       ? { orderBy: { createdAt: 'desc' } }
       : orderBy === 'expensive'
       ? { orderBy: { price: 'desc' } }
-      : { orderBy: { createdAt: 'asc' } }
+      : { orderBy: { price: 'asc' } }
     : undefined
 }
