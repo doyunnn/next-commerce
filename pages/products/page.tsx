@@ -1,8 +1,10 @@
 import { categories, products } from '@prisma/client'
 import Image from 'next/image'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { Pagination, SegmentedControl } from '@mantine/core'
-import { CATEGORY_MAP, TAKE } from '@/constants/products'
+import { Input, Pagination, SegmentedControl, Select } from '@mantine/core'
+import { CATEGORY_MAP, FILTERS, OrderByType, TAKE } from '@/constants/products'
+import { IconSearch } from '@tabler/icons-react'
+import useDebounced from '../../hooks/useDebounce'
 
 export default function Products() {
   // const [skip, setSkip] = useState(0)
@@ -11,17 +13,28 @@ export default function Products() {
   const [categories, setCategories] = useState<categories[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('-1')
   const [activePage, setPage] = useState(1)
+  const [selectedFilter, setSelectedFilter] = useState<OrderByType | null>(
+    FILTERS[0].value,
+  )
+  const [keyword, setKeyword] = useState('')
+
+  const debouncedKeyword = useDebounced<string>(keyword)
 
   useEffect(() => {
     fetchCategories().then(setCategories)
   }, [])
   useEffect(() => {
-    fetchProductsCount(selectedCategory).then(setTotal)
-  }, [selectedCategory])
+    fetchProductsCount(selectedCategory, debouncedKeyword).then(setTotal)
+  }, [selectedCategory, debouncedKeyword])
   useEffect(() => {
     const skip = TAKE * (activePage - 1)
-    fetchProducts(skip, selectedCategory).then(setProducts)
-  }, [activePage, selectedCategory])
+    fetchProducts(
+      skip,
+      selectedCategory,
+      selectedFilter,
+      debouncedKeyword,
+    ).then(setProducts)
+  }, [activePage, selectedCategory, selectedFilter, debouncedKeyword])
   const fetchCategories = async () => {
     const data = await fetch(`/api/get-categories`)
       .then((res) => res.json())
@@ -29,16 +42,23 @@ export default function Products() {
 
     return data
   }
-  const fetchProductsCount = async (category: string) => {
-    const data = await fetch(`/api/get-products-count?category=${category}`)
+  const fetchProductsCount = async (category: string, keyword: string) => {
+    const data = await fetch(
+      `/api/get-products-count?category=${category}&contains=${keyword}`,
+    )
       .then((res) => res.json())
       .then((data) => Math.ceil(data.items / TAKE))
 
     return data
   }
-  const fetchProducts = async (skip: number = 0, category: string) => {
+  const fetchProducts = async (
+    skip: number = 0,
+    category: string,
+    filter: OrderByType | null,
+    keyword: string,
+  ) => {
     const data = await fetch(
-      `/api/get-products?skip=${skip}&take=${TAKE}&category=${category}`,
+      `/api/get-products?skip=${skip}&take=${TAKE}&category=${category}&orderBy=${filter}&contains=${keyword}`,
     )
       .then((res) => res.json())
       .then((data) => data.items)
@@ -57,8 +77,27 @@ export default function Products() {
     return list
   }, [categories])
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeyword(e.target.value)
+  }
+
   return (
-    <div className="px-36 mt-36 mb-36 flex flex-col items-center justify-center">
+    <div className="px-36 mt-36 mb-36 flex flex-col justify-center">
+      <div className="mb-[10px]">
+        <Input
+          icon={<IconSearch />}
+          placeholder="Search"
+          value={keyword}
+          onChange={handleChange}
+        />
+      </div>
+      <div className="mb-[10px]">
+        <Select
+          value={selectedFilter}
+          onChange={(value) => setSelectedFilter(value as OrderByType)}
+          data={FILTERS}
+        />
+      </div>
       <div className="mb-4 ">
         {categoriesList && (
           <SegmentedControl
