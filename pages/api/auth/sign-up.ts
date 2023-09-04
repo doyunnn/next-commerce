@@ -4,7 +4,7 @@ import jwtDecode from 'jwt-decode'
 
 const prisma = new PrismaClient()
 
-async function SignIn(credential: string) {
+async function SignUp(credential: string) {
   const decoded: {
     name: string
     email: string
@@ -45,7 +45,7 @@ export default async function handler(
 ) {
   const { credential } = req.query
   try {
-    const response = await SignIn(String(credential))
+    const response = await SignUp(String(credential))
     res.status(200).json({ items: response, message: `Success sign in` })
   } catch (error) {
     return res.status(400).json({ message: `Failed sign in` })
