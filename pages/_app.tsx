@@ -3,8 +3,12 @@ import type { AppProps } from 'next/app'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { GOOGLE_CLIENT_ID } from '@/constants/googleAuth'
+import { SessionProvider } from 'next-auth/react'
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App({
+  Component,
+  pageProps: { session, ...pageProps },
+}: AppProps) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -14,10 +18,11 @@ export default function App({ Component, pageProps }: AppProps) {
   })
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    // <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
         <Component {...pageProps} />
       </QueryClientProvider>
-    </GoogleOAuthProvider>
+    </SessionProvider>
   )
 }

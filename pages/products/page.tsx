@@ -8,8 +8,10 @@ import useDebounced from '../../hooks/useDebounce'
 import useCacheGetProducts from '../api/hooks/useCacheGetProducts'
 import useCacheGetCategories from '../api/hooks/useCacheGetCategories'
 import useCacheGetProductsCount from '../api/hooks/useCacheGetProductsCount'
+import { useSession } from 'next-auth/react'
 
 export default function Products() {
+  const { data: session } = useSession()
   // const [skip, setSkip] = useState(0)
   // const [products, setProducts] = useState<products[]>([])
   // const [total, setTotal] = useState(0)
@@ -85,6 +87,7 @@ export default function Products() {
 
   return (
     <div className="px-36 mt-36 mb-36 flex flex-col justify-center">
+      {session && <h1>안녕하세요. {session.user?.name}</h1>}
       <div className="mb-[10px]">
         <Input
           icon={<IconSearch />}
