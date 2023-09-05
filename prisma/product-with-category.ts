@@ -400,7 +400,7 @@ const hoodie = [
     contents: `{"blocks":[{"key":"5fi56","text":"본 제품은 오가닉 소재입니다. 어느 스타일에도 잘 어울리는 힙한 감성을 품고 있습니다.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}`,
     category_id: 5,
     image_url:
-      'https://cdn.shopify.com/s/files/1/0282/5850/products/apparel_tops_newbalance_made-in-usa-core-hoodie_MT21540.color_athletic-grey.view_1_720x.jpg',
+      'https://cdn.shopify.com/s/files/1/0282/5850/products/apparel_tops_jordan_mcr-flc-hoodie_DJ9772-839.color_coppermoon.view_1_720x.jpg',
     price: getRandom(300000, 100000),
   },
   {

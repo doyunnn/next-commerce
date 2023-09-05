@@ -9,8 +9,10 @@ import useCacheGetProducts from '../api/hooks/useCacheGetProducts'
 import useCacheGetCategories from '../api/hooks/useCacheGetCategories'
 import useCacheGetProductsCount from '../api/hooks/useCacheGetProductsCount'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
 
 export default function Products() {
+  const router = useRouter()
   const { data: session } = useSession()
   // const [skip, setSkip] = useState(0)
   // const [products, setProducts] = useState<products[]>([])
@@ -116,7 +118,11 @@ export default function Products() {
       {products && (
         <div className="grid grid-cols-3 gap-5">
           {products.map((item) => (
-            <div key={item.id} className="max-w-[310px] pb-[10px]">
+            <div
+              key={item.id}
+              className="max-w-[310px] pb-[10px]"
+              onClick={() => router.push(`/products/${item.id}`)}
+            >
               <Image
                 className="rounded"
                 src={item.image_url ?? ''}
