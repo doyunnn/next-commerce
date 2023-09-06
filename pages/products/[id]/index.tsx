@@ -1,15 +1,20 @@
-import CustomEditor from '@/components/Editor'
-import { IProduct } from '@/pages/api/get-product'
+import CustomEditor from '@components/Editor'
 import { products } from '@prisma/client'
-import { EditorState, convertFromRaw, convertToRaw } from 'draft-js'
-import { GetServerSideProps, GetServerSidePropsContext } from 'next'
-import Head from 'next/head'
+import { format } from 'date-fns'
+import { convertFromRaw, convertToRaw, EditorState } from 'draft-js'
+import { GetServerSidePropsContext } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import Carousel from 'nuka-carousel'
-import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
-import { CATEGORY_MAP } from '@/constants/products'
+import { useEffect, useState } from 'react'
+import { CATEGORY_MAP } from 'constants/products'
+import { useMutation, useQuery, useQueryClient } from 'react-query'
+import { Button } from '@mantine/core'
+import { IconHeart, IconHeartbeat } from '@tabler/icons-react'
+import { useSession } from 'next-auth/react'
+import useCacheGetWishlist, {
+  WISHLIST_QUERY_KEY,
+} from '@/pages/api/hooks/useCacheGetWishlist'
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const product = await fetch(
@@ -17,85 +22,153 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   )
     .then((res) => res.json())
     .then((data) => data.items)
-
   return {
     props: {
-      product: { ...product },
-      images: [product.image_url, product.image_url],
+      product: { ...product, images: [product.image_url, product.image_url] },
     },
   }
 }
 
 export default function Products(props: {
-  product: products
-  images: string[]
+  product: products & { images: string[] }
 }) {
   const [index, setIndex] = useState(0)
+  const { data: session } = useSession()
 
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { id: productId } = router.query
 
   const [editorState] = useState<EditorState | undefined>(() =>
-    props.product?.contents
+    props.product.contents
       ? EditorState.createWithContent(
           convertFromRaw(JSON.parse(props.product.contents)),
         )
       : EditorState.createEmpty(),
   )
 
+  const { data: wishlist } = useCacheGetWishlist()
+
+  const { mutate, isLoading } = useMutation<unknown, unknown, string, any>(
+    (productId) =>
+      fetch('/api/update-wishlist', {
+        method: 'POST',
+        body: JSON.stringify({ productId }),
+      })
+        .then((data) => data.json())
+        .then((res) => res.items),
+    {
+      onMutate: async (productId) => {
+        await queryClient.cancelQueries([WISHLIST_QUERY_KEY])
+
+        // Snapshot the previous value
+        const previous = queryClient.getQueryData([WISHLIST_QUERY_KEY])
+
+        // Optimistically update to the new value
+        queryClient.setQueryData<string[]>([WISHLIST_QUERY_KEY], (old) =>
+          old
+            ? old.includes(String(productId))
+              ? old.filter((id) => id !== String(productId))
+              : old.concat(String(productId))
+            : [],
+        )
+
+        // Return a context object with the snapshotted value
+        return { previous }
+      },
+      onError: (error, _, context) => {
+        queryClient.setQueryData([WISHLIST_QUERY_KEY], context.previous)
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries([WISHLIST_QUERY_KEY])
+      },
+    },
+  )
+
   const product = props.product
-  const images = props.images
+
+  const isWished =
+    wishlist != null && productId != null
+      ? wishlist.includes(String(productId))
+      : false
 
   return (
     <>
-      {product != null && images != null && productId != null ? (
-        <div className="p-24 flex flex-row gap-x-[30px]">
-          <div className="max-w-[300px]">
+      {product != null && productId != null ? (
+        <div className="p-24 flex flex-row">
+          <div style={{ maxWidth: 600, marginRight: 52 }}>
             <Carousel
               animation="fade"
-              // autoplay
               withoutControls
               wrapAround
               speed={10}
               slideIndex={index}
             >
-              {images.map((url, idx) => (
+              {product.images.map((url, idx) => (
                 <Image
-                  key={`${url}-${idx}`}
+                  key={`${url}-carousel-${idx}`}
                   src={url}
                   alt="image"
-                  width={300}
-                  height={300}
-                  // layout="responsive"
+                  width={600}
+                  height={600}
+                  layout="responsive"
                 />
               ))}
             </Carousel>
             <div className="flex space-x-4 mt-2">
-              {images.map((url, i) => (
-                <div key={`${url}-${i}`} onClick={() => setIndex(i)}>
-                  <Image src={url} alt="image" width={80} height={80} />
+              {product.images.map((url, idx) => (
+                <div key={`${url}-thumb-${idx}`} onClick={() => setIndex(idx)}>
+                  <Image src={url} alt="image" width={100} height={100} />
                 </div>
               ))}
             </div>
-            <div className="mx-[30px] my-[20px] py-[20px] max-w-[1326px] flex flex-row justify-center border">
-              {editorState && (
-                <CustomEditor editorState={editorState} readOnly />
-              )}
-            </div>
+            {editorState != null && (
+              <CustomEditor editorState={editorState} readOnly />
+            )}
           </div>
-          <div className="max-w-[300px] flex flex-col space-y-5">
-            <h1 className="text-lg text-zinc-400">
+          <div style={{ maxWidth: 600 }} className="flex flex-col space-y-6">
+            <div className="text-lg text-zinc-400">
               {CATEGORY_MAP[product.category_id - 1]}
-            </h1>
+            </div>
             <div className="text-4xl font-semibold">{product.name}</div>
-            <div className="text-lg">{product.price}</div>
+            <div className="text-lg">
+              {product.price.toLocaleString('ko-kr')}원
+            </div>
+            <div>{JSON.stringify(wishlist)}</div>
+            <Button
+              loading={isLoading}
+              disabled={wishlist == null}
+              leftIcon={
+                isWished ? (
+                  <IconHeart size={20} stroke={1.5} />
+                ) : (
+                  <IconHeartbeat size={20} stroke={1.5} />
+                )
+              }
+              style={{ backgroundColor: isWished ? 'red' : 'grey' }}
+              radius="xl"
+              size="md"
+              styles={{
+                root: { paddingRight: 14, height: 48 },
+              }}
+              onClick={() => {
+                if (session == null) {
+                  alert('로그인이 필요해요')
+                  router.push('/auth/login')
+                  return
+                }
+                mutate(String(productId))
+              }}
+            >
+              찜하기
+            </Button>
             <div className="text-sm text-zinc-300">
-              등록일 : {format(new Date(product.createdAt), 'yyyy년 M월 d일')}
+              등록: {format(new Date(product.createdAt), 'yyyy년 M월 d일')}
             </div>
           </div>
         </div>
       ) : (
-        <h1>빈 값</h1>
+        <div>로딩중</div>
       )}
     </>
   )

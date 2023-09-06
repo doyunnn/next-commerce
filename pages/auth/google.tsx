@@ -1,4 +1,9 @@
-import { CredentialResponse, GoogleLogin } from '@react-oauth/google'
+import { GOOGLE_CLIENT_ID } from '@/constants/googleAuth'
+import {
+  CredentialResponse,
+  GoogleLogin,
+  GoogleOAuthProvider,
+} from '@react-oauth/google'
 
 export default function Google() {
   const registerUser = (credentialRes: CredentialResponse) => {
@@ -7,13 +12,15 @@ export default function Google() {
       .then((data) => data)
   }
   return (
-    <div className="flex">
-      <GoogleLogin
-        onSuccess={registerUser}
-        onError={() => {
-          console.log('Login Failed')
-        }}
-      />
-    </div>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <div className="flex">
+        <GoogleLogin
+          onSuccess={registerUser}
+          onError={() => {
+            console.log('Login Failed')
+          }}
+        />
+      </div>
+    </GoogleOAuthProvider>
   )
 }
