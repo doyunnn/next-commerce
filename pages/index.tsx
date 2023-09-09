@@ -1,122 +1,156 @@
+import { categories, products } from '@prisma/client'
 import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import Button from '@components/Button'
-import { useEffect, useRef, useState } from 'react'
-import { css } from '@emotion/react'
-import Link from 'next/link'
-
-type IDatabase = {
-  id: string
-  name: string
-  createdAt: string
-  properties: {
-    id: string
-  }[]
-}
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { Input, Pagination, SegmentedControl, Select } from '@mantine/core'
+import { CATEGORY_MAP, FILTERS, OrderByType, TAKE } from '@/constants/products'
+import { IconSearch } from '@tabler/icons-react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
+import useDebounce from '@/hooks/useDebounce'
+import useCacheGetProductsCount from './api/hooks/useCacheGetProductsCount'
+import useCacheGetCategories from './api/hooks/useCacheGetCategories'
+import useCacheGetProducts from './api/hooks/useCacheGetProducts'
 
 export default function Home() {
-  const [products, setProducts] = useState<IDatabase[]>([])
-  const inputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+  // const [skip, setSkip] = useState(0)
+  // const [products, setProducts] = useState<products[]>([])
+  // const [total, setTotal] = useState(0)
+  // const [categories, setCategories] = useState<categories[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('-1')
+  const [activePage, setPage] = useState(1)
+  const [selectedFilter, setSelectedFilter] = useState<OrderByType | null>(
+    FILTERS[0].value,
+  )
+  const [keyword, setKeyword] = useState('')
+
+  const debouncedKeyword = useDebounce<string>(keyword)
+
+  const { data: total } = useCacheGetProductsCount(
+    selectedCategory,
+    debouncedKeyword,
+  )
+  const { data: categories } = useCacheGetCategories()
+
+  const { data: products } = useCacheGetProducts({
+    skip: activePage,
+    category: Number(selectedCategory),
+    orderBy: selectedFilter,
+    contains: debouncedKeyword,
+  })
+
+  const categoriesList = useMemo(() => {
+    const list = [{ label: 'ALL', value: '-1' }]
+    if (categories && categories.length > 0) {
+      for (const c of categories) {
+        const data = { label: c.name, value: String(c.id) }
+        list.push(data)
+      }
+    }
+    return list
+  }, [categories])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeyword(e.target.value)
+  }
 
   // useEffect(() => {
-  //   fetch('/api/get-items')
-  //     .then((res) => res.json())
-  //     .then((data) => setProducts(data.items))
+  //   fetchCategories().then(setCategories)
   // }, [])
-  useEffect(() => {
-    fetch('/api/get-products')
-      .then((res) => res.json())
-      .then((data) => setProducts(data.items))
-  }, [])
+  // useEffect(() => {
+  //   fetchProductsCount(selectedCategory, debouncedKeyword).then(setTotal)
+  // }, [selectedCategory, debouncedKeyword])
+  // useEffect(() => {
+  //   const skip = TAKE * (activePage - 1)
+  //   fetchProducts(
+  //     skip,
+  //     selectedCategory,
+  //     selectedFilter,
+  //     debouncedKeyword,
+  //   ).then(setProducts)
+  // }, [activePage, selectedCategory, selectedFilter, debouncedKeyword])
+  // const fetchCategories = async () => {
+  //   const data = await fetch(`/api/get-categories`)
+  //     .then((res) => res.json())
+  //     .then((data) => data.items)
 
-  const handleClick = () => {
-    const inputValue = inputRef.current?.value
-    if (inputRef.current == null || inputValue == '') {
-      alert('name을 넣어주세요.')
-      return
-    }
-    fetch(`/api/add-item?name=${inputValue}`)
-      .then((res) => res.json())
-      .then((data) => alert(data.message))
-  }
+  //   return data
+  // }
+  // const fetchProductsCount = async (category: string, keyword: string) => {
+  //   const data = await fetch(
+  //     `/api/get-products-count?category=${category}&contains=${keyword}`,
+  //   )
+  //     .then((res) => res.json())
+  //     .then((data) => Math.ceil(data.items / TAKE))
 
-  const getDetail = (pageId: string, propertyId: string) => {
-    fetch(`/api/get-detail?pageId=${pageId}&propertyId=${propertyId}`)
-      .then((res) => res.json())
-      .then((data) => alert(JSON.stringify(data.detail)))
-  }
+  //   return data
+  // }
+
   return (
-    <main
-      className={`flex  min-h-screen flex-col items-center justify-center gap-y-[50px] p-24 `}
-    >
-      <div className="grid text-center">
-        <input
-          className="placeholder:italic placeholder:text-slate-400 w-96 block bg-white  border border-slate-300 rounded-md py-2 px-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1 sm:text-sm"
-          ref={inputRef}
-          type="text"
-          placeholder="name"
+    <div className="mt-36 mb-36 flex flex-col justify-center">
+      <div className="mb-[10px]">
+        <Input
+          icon={<IconSearch />}
+          placeholder="Search"
+          value={keyword}
+          onChange={handleChange}
         />
       </div>
-      <button
-        onClick={handleClick}
-        css={css`
-          background-color: pink;
-          padding: 16px;
-          border-radius: 8px;
-        `}
-      >
-        <h2 className={`font-semibold`}>Add Jacket</h2>
-      </button>
-
-      <Button onClick={handleClick}>Add Product</Button>
-
-      <div className="">
-        <h2 className={`text-2xl font-semibold`}>Prouct List</h2>
-        <br />
-        {products &&
-          products.map((item) => (
-            <div key={item.id}>
-              <Link href={`/products/${item.id}`}>
-                <div className="flex gap-x-[10px]">
-                  <p>{item.name}</p>
-                  <span>{item.createdAt}</span>
-                </div>
-              </Link>
+      <div className="mb-[10px]">
+        <Select
+          value={selectedFilter}
+          onChange={(value) => setSelectedFilter(value as OrderByType)}
+          data={FILTERS}
+        />
+      </div>
+      <div className="mb-4 ">
+        {categoriesList && (
+          <SegmentedControl
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            data={categoriesList}
+            color="dark"
+          />
+        )}
+      </div>
+      {products && (
+        <div className="grid grid-cols-3 gap-5">
+          {products.map((item) => (
+            <div
+              key={item.id}
+              className="max-w-[310px] pb-[10px]"
+              onClick={() => router.push(`/products/${item.id}`)}
+            >
+              <Image
+                className="rounded"
+                src={item.image_url ?? ''}
+                width={300}
+                height={300}
+                alt={item.name}
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+              />
+              <div className="flex mt-[5px]">
+                <span>{item.name}</span>
+                <span className="ml-auto">
+                  {item.price.toLocaleString('ko-KR')}원
+                </span>
+              </div>
+              <span className="text-zinc-400">
+                {CATEGORY_MAP[item.category_id - 1]}
+              </span>
             </div>
           ))}
-        {/* {products &&
-          products.map((item) => (
-            <div key={item.id} className="w-full w-auto">
-              {JSON.stringify(item)}
-              {item.properties &&
-                Object.entries(item.properties).map(([key, value]) => (
-                  <button
-                    key={key}
-                    className="p-[5px] mx-[5px] rounded-md bg-slate-500"
-                    onClick={() => getDetail(item.id, value.id)}
-                  >
-                    {key}
-                  </button>
-                ))}
-              <br />
-              <br />
-            </div>
-          ))} */}
-      </div>
-
-      {/* ---------------------------------------------- */}
-      <br />
-      <br />
-      <div className="relative flex place-items-center before:absolute before:h-[100px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+        </div>
+      )}
+      <div className="w-full flex mt-5">
+        <Pagination
+          className="m-auto"
+          value={activePage}
+          onChange={setPage}
+          total={total ?? 0}
         />
       </div>
-    </main>
+    </div>
   )
 }

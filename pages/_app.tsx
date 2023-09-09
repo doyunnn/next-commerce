@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from 'react-query'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { GOOGLE_CLIENT_ID } from '@/constants/googleAuth'
 import { SessionProvider } from 'next-auth/react'
+import Header from '@/components/Header'
 
 export default function App({
   Component,
@@ -20,7 +21,10 @@ export default function App({
   return (
     <SessionProvider session={session}>
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <div className="px-36">
+          <Header />
+          <Component {...pageProps} />
+        </div>
       </QueryClientProvider>
     </SessionProvider>
   )

@@ -1,5 +1,5 @@
 import CustomEditor from '@components/Editor'
-import { products } from '@prisma/client'
+import { Cart, products } from '@prisma/client'
 import { format } from 'date-fns'
 import { convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { GetServerSidePropsContext } from 'next'
@@ -10,11 +10,13 @@ import { useEffect, useState } from 'react'
 import { CATEGORY_MAP } from 'constants/products'
 import { useMutation, useQuery, useQueryClient } from 'react-query'
 import { Button } from '@mantine/core'
-import { IconHeart, IconHeartbeat } from '@tabler/icons-react'
+import { IconHeart, IconHeartbeat, IconShoppingCart } from '@tabler/icons-react'
 import { useSession } from 'next-auth/react'
 import useCacheGetWishlist, {
   WISHLIST_QUERY_KEY,
 } from '@/pages/api/hooks/useCacheGetWishlist'
+import CountControl from '@/components/CountControl'
+import { CART_QUERY_KEY } from '@/pages/api/hooks/useCacheGetCart'
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const product = await fetch(
@@ -33,6 +35,7 @@ export default function Products(props: {
   product: products & { images: string[] }
 }) {
   const [index, setIndex] = useState(0)
+  const [quantity, setQuantity] = useState<number | '' | undefined>(0)
   const { data: session } = useSession()
 
   const router = useRouter()
@@ -85,7 +88,43 @@ export default function Products(props: {
     },
   )
 
+  const { mutate: addCart } = useMutation<
+    unknown,
+    unknown,
+    Omit<Cart, 'id' | 'userId'>,
+    any
+  >(
+    (item) =>
+      fetch('/api/add-cart', {
+        method: 'POST',
+        body: JSON.stringify({ item }),
+      })
+        .then((data) => data.json())
+        .then((res) => res.items),
+    {
+      onMutate: () => {
+        queryClient.invalidateQueries([CART_QUERY_KEY])
+      },
+      onSuccess: () => {
+        router.push('/cart')
+      },
+    },
+  )
+
   const product = props.product
+
+  const validate = (type: 'cart' | 'order') => {
+    if (quantity == null || quantity == 0) {
+      return alert('최소 수량을 입력하세요')
+    }
+    if (type === 'cart') {
+      addCart({
+        productId: product.id,
+        quantity: Number(quantity),
+        amount: product.price * Number(quantity),
+      })
+    }
+  }
 
   const isWished =
     wishlist != null && productId != null
@@ -95,7 +134,7 @@ export default function Products(props: {
   return (
     <>
       {product != null && productId != null ? (
-        <div className="p-24 flex flex-row">
+        <div className="flex flex-row">
           <div style={{ maxWidth: 600, marginRight: 52 }}>
             <Carousel
               animation="fade"
@@ -109,8 +148,8 @@ export default function Products(props: {
                   key={`${url}-carousel-${idx}`}
                   src={url}
                   alt="image"
-                  width={600}
-                  height={600}
+                  width={620}
+                  height={700}
                   layout="responsive"
                 />
               ))}
@@ -134,37 +173,64 @@ export default function Products(props: {
             <div className="text-lg">
               {product.price.toLocaleString('ko-kr')}원
             </div>
-            <div>{JSON.stringify(wishlist)}</div>
-            <Button
-              loading={isLoading}
-              disabled={wishlist == null}
-              leftIcon={
-                isWished ? (
-                  <IconHeart size={20} stroke={1.5} />
-                ) : (
-                  <IconHeartbeat size={20} stroke={1.5} />
-                )
-              }
-              style={{ backgroundColor: isWished ? 'red' : 'grey' }}
-              radius="xl"
-              size="md"
-              styles={{
-                root: { paddingRight: 14, height: 48 },
-              }}
-              onClick={() => {
-                if (session == null) {
-                  alert('로그인이 필요해요')
-                  router.push('/auth/login')
-                  return
+            <div>
+              <span className="text-lg">수량 </span>
+              <CountControl value={quantity} setValue={setQuantity} />
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                leftIcon={<IconShoppingCart />}
+                style={{ backgroundColor: 'black' }}
+                radius="xl"
+                size="md"
+                styles={{
+                  root: { paddingRight: 14, height: 48 },
+                }}
+                onClick={() => {
+                  if (session == null) {
+                    alert('로그인이 필요해요')
+                    router.push('/auth/login')
+                    return
+                  }
+                  validate('cart')
+                }}
+              >
+                장바구니
+              </Button>
+
+              <Button
+                loading={isLoading}
+                disabled={wishlist == null}
+                leftIcon={
+                  isWished ? (
+                    <IconHeart size={20} stroke={1.5} />
+                  ) : (
+                    <IconHeartbeat size={20} stroke={1.5} />
+                  )
                 }
-                mutate(String(productId))
-              }}
-            >
-              찜하기
-            </Button>
+                style={{ backgroundColor: isWished ? 'red' : 'grey' }}
+                radius="xl"
+                size="md"
+                styles={{
+                  root: { paddingRight: 14, height: 48 },
+                }}
+                onClick={() => {
+                  if (session == null) {
+                    alert('로그인이 필요해요')
+                    router.push('/auth/login')
+                    return
+                  }
+                  mutate(String(productId))
+                }}
+              >
+                찜하기
+              </Button>
+            </div>
             <div className="text-sm text-zinc-300">
               등록: {format(new Date(product.createdAt), 'yyyy년 M월 d일')}
             </div>
+
+            <div>{JSON.stringify(wishlist)}</div>
           </div>
         </div>
       ) : (
