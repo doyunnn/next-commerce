@@ -7,9 +7,11 @@ import styled from '@emotion/styled'
 import { Button } from '@mantine/core'
 import useCacheGetProducts from './api/hooks/useCacheGetProducts'
 import { CATEGORY_MAP } from '@/constants/products'
-import { Cart } from '@prisma/client'
+import { Cart, OrderItem } from '@prisma/client'
 import useCacheGetCart, { CART_QUERY_KEY } from './api/hooks/useCacheGetCart'
 import { useMutation, useQueryClient } from 'react-query'
+import { ORDER_QUERY_KEY } from './api/hooks/useCacheGetOrder'
+import { da } from 'date-fns/locale'
 
 export interface ICartItem extends Cart {
   name: string
@@ -19,6 +21,7 @@ export interface ICartItem extends Cart {
 
 export default function CartPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { data } = useCacheGetCart()
 
   const deliveryAmount = data && data.length > 0 ? 5000 : 0
@@ -37,9 +40,44 @@ export default function CartPage() {
     contains: '',
   })
 
+  const { mutate: addOrder } = useMutation<
+    unknown,
+    unknown,
+    Omit<OrderItem, 'id'>[],
+    any
+  >(
+    (items) =>
+      fetch('/api/add-order', {
+        method: 'POST',
+        body: JSON.stringify({ items }),
+      })
+        .then((data) => data.json())
+        .then((res) => res.items),
+    {
+      onMutate: () => {
+        queryClient.invalidateQueries([ORDER_QUERY_KEY])
+      },
+      onSuccess: () => {
+        router.push('/my')
+      },
+    },
+  )
+
   const handleOrder = () => {
-    //TODO: 주문하기 기능 구현
-    alert(`장바구니에 담긴 것들 ${JSON.stringify(data)} 주문`)
+    if (data == null) {
+      return
+    }
+    addOrder(
+      data.map((cart) => ({
+        productId: cart.productId,
+        price: cart.price,
+        amount: cart.amount,
+        quantity: cart.quantity,
+      })),
+    )
+    alert(
+      `장바구니에 담긴 것들 ${data.map((item) => item.name).join(', ')} 주문`,
+    )
   }
 
   return (

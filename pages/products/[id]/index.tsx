@@ -1,5 +1,5 @@
 import CustomEditor from '@components/Editor'
-import { Cart, products } from '@prisma/client'
+import { Cart, OrderItem, products } from '@prisma/client'
 import { format } from 'date-fns'
 import { convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { GetServerSidePropsContext } from 'next'
@@ -111,6 +111,29 @@ export default function Products(props: {
     },
   )
 
+  const { mutate: addOrder } = useMutation<
+    unknown,
+    unknown,
+    Omit<OrderItem, 'id'>[],
+    any
+  >(
+    (items) =>
+      fetch('/api/add-order', {
+        method: 'POST',
+        body: JSON.stringify({ items }),
+      })
+        .then((data) => data.json())
+        .then((res) => res.items),
+    {
+      onMutate: () => {
+        queryClient.invalidateQueries(['order'])
+      },
+      onSuccess: () => {
+        router.push('/my')
+      },
+    },
+  )
+
   const product = props.product
 
   const validate = (type: 'cart' | 'order') => {
@@ -123,6 +146,16 @@ export default function Products(props: {
         quantity: Number(quantity),
         amount: product.price * Number(quantity),
       })
+    }
+    if (type === 'order') {
+      addOrder([
+        {
+          productId: product.id,
+          quantity: Number(quantity),
+          amount: product.price * Number(quantity),
+          price: product.price,
+        },
+      ])
     }
   }
 
@@ -229,7 +262,25 @@ export default function Products(props: {
             <div className="text-sm text-zinc-300">
               등록: {format(new Date(product.createdAt), 'yyyy년 M월 d일')}
             </div>
-
+            <Button
+              leftIcon={<IconShoppingCart />}
+              style={{ backgroundColor: 'black' }}
+              radius="xl"
+              size="md"
+              styles={{
+                root: { paddingRight: 14, height: 48 },
+              }}
+              onClick={() => {
+                if (session == null) {
+                  alert('로그인이 필요해요')
+                  router.push('/auth/login')
+                  return
+                }
+                validate('order')
+              }}
+            >
+              구매하기
+            </Button>
             <div>{JSON.stringify(wishlist)}</div>
           </div>
         </div>
