@@ -15,18 +15,20 @@ const Editor = dynamic<EditorProps>(
 interface IProps {
   editorState: EditorState
   readOnly?: boolean
+  noPadding?: boolean
   onSave?: () => void
   onEditorStateChange?: Dispatch<SetStateAction<EditorState | undefined>>
 }
 
 const CustomEditor: React.FC<IProps> = ({
   editorState,
-  readOnly,
+  readOnly = false,
+  noPadding = false,
   onSave,
   onEditorStateChange,
 }) => {
   return (
-    <Wrapper>
+    <Wrapper readOnly={readOnly} noPadding={noPadding}>
       <Editor
         readOnly={readOnly}
         editorState={editorState}
@@ -48,6 +50,8 @@ const CustomEditor: React.FC<IProps> = ({
 }
 export default CustomEditor
 
-const Wrapper = styled.div`
-  padding: 16px;
+const Wrapper = styled.div<{ readOnly: boolean; noPadding: boolean }>`
+  ${(props) => (props.noPadding ? '' : 'padding: 16px;')}
+  ${(props) =>
+    props.readOnly ? '' : `border: 1px solid black; border-radius: 8px;`}
 `

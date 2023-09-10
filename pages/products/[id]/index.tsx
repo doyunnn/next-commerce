@@ -1,5 +1,5 @@
 import CustomEditor from '@components/Editor'
-import { Cart, OrderItem, products } from '@prisma/client'
+import { Cart, OrderItem, products, Comment } from '@prisma/client'
 import { format } from 'date-fns'
 import { convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { GetServerSidePropsContext } from 'next'
@@ -17,6 +17,7 @@ import useCacheGetWishlist, {
 } from '@/pages/api/hooks/useCacheGetWishlist'
 import CountControl from '@/components/CountControl'
 import { CART_QUERY_KEY } from '@/pages/api/hooks/useCacheGetCart'
+import CommentItem from '@/components/CommentItem'
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const product = await fetch(
@@ -24,15 +25,25 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   )
     .then((res) => res.json())
     .then((data) => data.items)
+  const comments = await fetch(
+    `http://localhost:3000/api/get-comments?productId=${context.params?.id}`,
+  )
+    .then((res) => res.json())
+    .then((data) => data.items)
+
   return {
     props: {
       product: { ...product, images: [product.image_url, product.image_url] },
+      comments: comments,
     },
   }
 }
 
+export interface CommentItemType extends Comment, OrderItem {}
+
 export default function Products(props: {
   product: products & { images: string[] }
+  comments: CommentItemType[]
 }) {
   const [index, setIndex] = useState(0)
   const [quantity, setQuantity] = useState<number | '' | undefined>(0)
@@ -163,11 +174,11 @@ export default function Products(props: {
     wishlist != null && productId != null
       ? wishlist.includes(String(productId))
       : false
-
+  console.log(props.comments, 'props.commentsprops.commentsprops.comments')
   return (
     <>
       {product != null && productId != null ? (
-        <div className="flex flex-row">
+        <div className="flex flex-row pb-[80px]">
           <div style={{ maxWidth: 600, marginRight: 52 }}>
             <Carousel
               animation="fade"
@@ -197,6 +208,13 @@ export default function Products(props: {
             {editorState != null && (
               <CustomEditor editorState={editorState} readOnly />
             )}
+            <div>
+              <p className="text-2xl font-semibold mb-[10px]">후기</p>
+              {props.comments &&
+                props.comments?.map((comment, idx) => (
+                  <CommentItem key={idx} item={comment} />
+                ))}
+            </div>
           </div>
           <div style={{ maxWidth: 600 }} className="flex flex-col space-y-6">
             <div className="text-lg text-zinc-400">

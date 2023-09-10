@@ -5,7 +5,7 @@ import { authOptions } from './auth/[...nextauth]'
 
 const prisma = new PrismaClient()
 
-async function getCart(userId: string) {
+async function getOrder(userId: string) {
   try {
     // orders 테이블에서 나의 주문들을 조회한다.
 
@@ -49,7 +49,7 @@ export default async function handler(
     return
   }
   try {
-    const wishlist = await getCart(String(session.id))
+    const wishlist = await getOrder(String(session.id))
     res.status(200).json({ items: wishlist, message: 'Success' })
   } catch (error) {
     res.status(400).json({ message: 'Failed' })
