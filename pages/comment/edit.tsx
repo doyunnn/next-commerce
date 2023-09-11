@@ -1,3 +1,4 @@
+import AutoSizeImage from '@/components/AutoSizeImage'
 import CustomEditor from '@/components/Editor'
 import { Input, Slider } from '@mantine/core'
 import { EditorState, convertFromRaw, convertToRaw } from 'draft-js'
@@ -26,6 +27,7 @@ export default function CommentEdit() {
               ),
             )
             setRate(data.items.rate)
+            setImages(data.items.images.split(',') ?? [])
           } else {
             setEditorState(EditorState.createEmpty())
           }
@@ -33,7 +35,36 @@ export default function CommentEdit() {
     }
   }, [orderItemId])
 
-  const handleChange = () => {}
+  const handleChange = () => {
+    if (
+      inputRef.current &&
+      inputRef.current.files &&
+      inputRef.current.files.length > 0
+    ) {
+      for (let i = 0; i < inputRef.current.files.length; i++) {
+        const fd = new FormData()
+
+        fd.append(
+          'image',
+          inputRef.current.files[i],
+          inputRef.current.files[i]?.name,
+        )
+        fetch(
+          'https://api.imgbb.com/1/upload?expiration=15552000&key=07bc96f596f8b687c9b096ff6702a322',
+          { method: 'POST', body: fd },
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data)
+
+            setImages((prev) =>
+              Array.from(new Set(prev.concat(data.data.image.url))),
+            )
+          })
+          .catch((error) => console.log(error))
+      }
+    }
+  }
 
   const handleSave = () => {
     if (editorState && orderItemId != null) {
@@ -45,7 +76,7 @@ export default function CommentEdit() {
           contents: JSON.stringify(
             convertToRaw(editorState.getCurrentContent()),
           ),
-          images: [],
+          images: images.join(','),
         }),
       })
         .then((res) => res.json())
@@ -87,11 +118,11 @@ export default function CommentEdit() {
         multiple
         onChange={handleChange}
       />
-      {/* <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex' }} className="space-x-[10px]">
         {images &&
           images.length > 0 &&
           images.map((image, idx) => <AutoSizeImage key={idx} src={image} />)}
-      </div> */}
+      </div>
     </div>
   )
 }

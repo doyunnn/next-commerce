@@ -11,10 +11,11 @@ interface IUpdateComment {
   orderItemId: number
   rate: number
   contents: string
+  images: string
 }
 
 async function updateComment(props: IUpdateComment) {
-  const { userId, orderItemId, rate, contents } = props
+  const { userId, orderItemId, rate, contents, images } = props
   try {
     const response = await prisma.comment.upsert({
       where: {
@@ -23,12 +24,14 @@ async function updateComment(props: IUpdateComment) {
       update: {
         contents,
         rate,
+        images,
       },
       create: {
         userId,
         orderItemId,
         contents,
         rate,
+        images,
       },
     })
 
@@ -50,7 +53,7 @@ export default async function handler(
   res: NextApiResponse<Data>,
 ) {
   const session = await unstable_getServerSession(req, res, authOptions)
-  const { orderItemId, rate, contents } = JSON.parse(req.body)
+  const { orderItemId, rate, contents, images } = JSON.parse(req.body)
   if (session == null) {
     res.status(200).json({ items: [], message: 'no Session' })
     return
@@ -62,6 +65,7 @@ export default async function handler(
       orderItemId: orderItemId,
       rate: rate,
       contents: contents,
+      images: images,
     }
     const comment = await updateComment(newComment)
     res.status(200).json({ items: comment, message: 'Success' })

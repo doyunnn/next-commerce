@@ -4,6 +4,7 @@ import { convertFromRaw, EditorState } from 'draft-js'
 import { CommentItemType } from 'pages/products/[id]'
 import CustomEditor from './Editor'
 import { IconStar } from '@tabler/icons-react'
+import AutoSizeImage from './AutoSizeImage'
 
 export default function CommentItem({ item }: { item: CommentItemType }) {
   return (
@@ -37,13 +38,13 @@ export default function CommentItem({ item }: { item: CommentItemType }) {
           noPadding
         />
       </div>
-      {/* <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex' }} className="space-x-[10px]">
         {item.images
           ?.split(',')
           .map((image, idx) => (
             <AutoSizeImage key={idx} src={image} size={150} />
           ))}
-      </div> */}
+      </div>
     </Wrapper>
   )
 }
